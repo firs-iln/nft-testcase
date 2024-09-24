@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
@@ -10,7 +10,7 @@ import "openzeppelin-contracts/contracts/access/Ownable.sol";
  * @dev The contract allows minting of NFTs with a configurable total supply, minting limits per address, and token price.
  */
 contract ABN is ERC721, Ownable {
-    uint256 public immutable MAX_SUPPLY; // Total supply of NFTs, configurable via constructor
+    uint256 public maxSupply; // Total supply of NFTs, configurable via constructor or onlyOwner setter
     uint256 public constant MAX_PER_MINT = 3; // Maximum number of tokens per mint
     uint256 public constant MAX_TOKENS_PER_ADDRESS = 6; // Maximum number of tokens a single address can hold
     uint256 public totalSupply; // Current total supply of minted tokens
@@ -21,12 +21,12 @@ contract ABN is ERC721, Ownable {
      * @notice Initializes the NFT contract with a base URI and a maximum supply of tokens.
      * @dev The constructor sets the baseTokenURI and the maximum supply for the NFT collection.
      * @param baseURI The base URI for the token metadata (e.g., IPFS link).
-     * @param maxSupply The total number of NFTs that can be minted.
+     * @param initMaxSupply The total number of NFTs that can be minted.
      */
-    constructor(string memory baseURI, uint256 maxSupply) ERC721("AwesomeBearsNFT", "ABN") Ownable(msg.sender) {
+    constructor(string memory baseURI, uint256 initMaxSupply) ERC721("AwesomeBearsNFT", "ABN") Ownable(msg.sender) {
         require(maxSupply > 0, "Max supply must be greater than zero");
         baseTokenURI = baseURI;
-        MAX_SUPPLY = maxSupply;
+        maxSupply = initMaxSupply;
     }
 
     /**
@@ -38,7 +38,7 @@ contract ABN is ERC721, Ownable {
     function mint(uint256 numberOfTokens, address recipient) public payable {
         require(numberOfTokens > 0, "Must mint at least one token");
         require(numberOfTokens <= MAX_PER_MINT, "Cannot mint more than 3 tokens at a time");
-        require(totalSupply + numberOfTokens <= MAX_SUPPLY, "Exceeds maximum supply");
+        require(totalSupply + numberOfTokens <= maxSupply, "Exceeds maximum supply");
         require(
             balanceOf(recipient) + numberOfTokens <= MAX_TOKENS_PER_ADDRESS, "Recipient cannot own more than 6 tokens"
         );
@@ -78,5 +78,9 @@ contract ABN is ERC721, Ownable {
      */
     function setBaseTokenURI(string memory baseURI) public onlyOwner {
         baseTokenURI = baseURI;
+    }
+
+    function setMaxSupply(uint256 newValue) public onlyOwner {
+        maxSupply = newValue;
     }
 }
