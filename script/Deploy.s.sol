@@ -14,7 +14,7 @@ contract Deploy is Script {
 
         console.log("Contract deployed at:", address(abn));
 
-        vm.stopBroadcast(); 
+        vm.stopBroadcast();
     }
 
     function concat(string memory a, string memory b) internal pure returns (string memory) {

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+// compiler-options: --optimize
 pragma solidity ^0.8.13;
 
 import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
@@ -24,7 +25,7 @@ contract ABN is ERC721, Ownable {
      * @param initMaxSupply The total number of NFTs that can be minted.
      */
     constructor(string memory baseURI, uint256 initMaxSupply) ERC721("AwesomeBearsNFT", "ABN") Ownable(msg.sender) {
-        require(maxSupply > 0, "Max supply must be greater than zero");
+        require(initMaxSupply > 0, "Max supply must be greater than zero");
         baseTokenURI = baseURI;
         maxSupply = initMaxSupply;
     }
@@ -38,17 +39,18 @@ contract ABN is ERC721, Ownable {
     function mint(uint256 numberOfTokens, address recipient) public payable {
         require(numberOfTokens > 0, "Must mint at least one token");
         require(numberOfTokens <= MAX_PER_MINT, "Cannot mint more than 3 tokens at a time");
-        require(totalSupply + numberOfTokens <= maxSupply, "Exceeds maximum supply");
+        uint256 newTotalSupply = totalSupply + numberOfTokens;
+        require(newTotalSupply <= maxSupply, "Exceeds maximum supply");
         require(
             balanceOf(recipient) + numberOfTokens <= MAX_TOKENS_PER_ADDRESS, "Recipient cannot own more than 6 tokens"
         );
         require(msg.value >= tokenPrice * numberOfTokens, "Ether value sent is not correct");
 
         for (uint256 i = 0; i < numberOfTokens; i++) {
-            uint256 tokenId = totalSupply + 1;
+            uint256 tokenId = totalSupply + i + 1;
             _safeMint(recipient, tokenId);
-            totalSupply++;
         }
+        totalSupply = newTotalSupply;
     }
 
     /**
@@ -80,7 +82,14 @@ contract ABN is ERC721, Ownable {
         baseTokenURI = baseURI;
     }
 
+    /**
+     * @notice Allows the owner to update the maximum supply of tokens.
+     * @dev This function should only be used in cases where the maximum token supply needs to be updated after deployment.
+     *      It should be used carefully, as changing the maximum supply can affect the minting logic.
+     * @param newValue The new maximum supply of tokens.
+     */
     function setMaxSupply(uint256 newValue) public onlyOwner {
+        require(newValue >= totalSupply, "New max supply must be greater than or equal to totalSupply");
         maxSupply = newValue;
     }
 }
